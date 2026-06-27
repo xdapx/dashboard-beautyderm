@@ -262,12 +262,15 @@ async function sha256(msg) {
 async function doLogin() {
   const u = document.getElementById('inp-user').value.trim();
   const p = document.getElementById('inp-pass').value;
-  if (u === CFG.USER && (await sha256(p)) === CFG.PASS_HASH) {
+  const computed = await sha256(p.trim());
+  if (u === CFG.USER && computed === CFG.PASS_HASH) {
     sessionStorage.setItem('bd_ok','1');
     document.getElementById('screen-login').style.display = 'none';
     startLoading();
   } else {
-    document.getElementById('login-err').style.display = 'block';
+    const errEl = document.getElementById('login-err');
+    errEl.style.display = 'block';
+    errEl.textContent = computed;
   }
 }
 function doLogout() { sessionStorage.removeItem('bd_ok'); location.reload(); }
