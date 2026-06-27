@@ -37,14 +37,38 @@
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-track{background:transparent}
     ::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:2px}
-    .inp-login{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);color:#e5e5e5;border-radius:8px;padding:10px 14px;font-size:14px;outline:none}
+    /* Login inputs — texto visible incluso con autofill */
+    .inp-login{
+      width:100%;background:#1e1e1e;border:1px solid rgba(255,255,255,.15);
+      color:#ffffff;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;
+      -webkit-text-fill-color:#ffffff;
+    }
     .inp-login:focus{border-color:#C9A96E}
+    .inp-login:-webkit-autofill,
+    .inp-login:-webkit-autofill:hover,
+    .inp-login:-webkit-autofill:focus{
+      -webkit-text-fill-color:#ffffff !important;
+      -webkit-box-shadow:0 0 0 1000px #1e1e1e inset !important;
+      caret-color:#ffffff;
+    }
+    /* Admin inputs */
+    .inp-admin{
+      width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);
+      color:#e5e5e5;border-radius:7px;padding:8px 12px;font-size:12px;outline:none;
+    }
+    .inp-admin:focus{border-color:#C9A96E}
+    .btn-gold{background:#C9A96E;color:#0a0a0a;border:none;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.04em}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);border-radius:7px;padding:8px 14px;font-size:12px;cursor:pointer}
+    .btn-ghost:hover{border-color:rgba(255,255,255,.3);color:#fff}
     #screen-loading{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
     #screen-dashboard{display:none}
     .grid-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
     .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
     .grid-half{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
     @media(max-width:900px){.grid-2,.grid-half{grid-template-columns:1fr}}
+    /* Admin modal tabs */
+    .atab{padding:8px 14px;font-size:12px;font-weight:500;border-bottom:2px solid transparent;color:rgba(255,255,255,.4);cursor:pointer;background:transparent;border-left:0;border-right:0;border-top:0}
+    .atab.active{color:#C9A96E;border-bottom-color:#C9A96E}
   </style>
 </head>
 <body>
@@ -58,15 +82,19 @@
     </div>
     <div class="glass" style="border-radius:16px;padding:32px">
       <div style="margin-bottom:16px">
-        <label style="display:block;font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Usuario</label>
-        <input id="inp-user" type="text" class="inp-login" placeholder="admin" autocomplete="username">
+        <label style="display:block;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Usuario</label>
+        <input id="inp-user" type="text" class="inp-login" placeholder="admin" autocomplete="username" spellcheck="false">
       </div>
       <div style="margin-bottom:20px">
-        <label style="display:block;font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Contraseña</label>
-        <input id="inp-pass" type="password" class="inp-login" placeholder="••••••••" autocomplete="current-password">
+        <label style="display:block;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Contraseña</label>
+        <input id="inp-pass" type="password" class="inp-login" placeholder="contraseña" autocomplete="current-password">
       </div>
-      <div id="login-err" style="display:none;color:#EF5B5B;font-size:12px;margin-bottom:12px">Usuario o contraseña incorrectos</div>
-      <button id="btn-login" onclick="doLogin()" style="width:100%;background:#C9A96E;color:#0a0a0a;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.08em;text-transform:uppercase">Ingresar</button>
+      <div id="login-err" style="display:none;font-size:11px;margin-bottom:12px;padding:8px 10px;background:rgba(239,91,91,.1);border:1px solid rgba(239,91,91,.2);border-radius:6px;color:#EF5B5B">
+        Usuario o contraseña incorrectos
+      </div>
+      <button onclick="doLogin()" style="width:100%;background:#C9A96E;color:#0a0a0a;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.08em;text-transform:uppercase">
+        Ingresar
+      </button>
     </div>
     <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,.15)">Av. Rivadavia 6351, Caballito · Uso interno</div>
   </div>
@@ -81,6 +109,74 @@
   <div id="load-msg" style="font-size:11px;color:rgba(255,255,255,.25);margin-top:12px"></div>
 </div>
 
+<!-- ADMIN MODAL -->
+<div id="admin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#131313;border:1px solid rgba(255,255,255,.1);border-radius:16px;width:560px;max-width:100%;max-height:88vh;overflow-y:auto">
+    <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Panel de Administración</div>
+      <button onclick="closeAdmin()" style="background:transparent;border:none;color:rgba(255,255,255,.4);font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="border-bottom:1px solid rgba(255,255,255,.07);padding:0 24px;display:flex">
+      <button class="atab active" id="atab-users"  onclick="switchATab('users')">Usuarios</button>
+      <button class="atab"        id="atab-datos"  onclick="switchATab('datos')">Fuentes de datos</button>
+    </div>
+    <div style="padding:24px">
+
+      <!-- USUARIOS -->
+      <div id="apanel-users">
+        <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:16px">Los usuarios se guardan en este navegador. Para otros dispositivos, repetí el proceso.</div>
+        <table class="dt" style="margin-bottom:24px">
+          <thead><tr><th>Usuario</th><th>Tipo</th><th></th></tr></thead>
+          <tbody id="tb-users"></tbody>
+        </table>
+        <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:20px">
+          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">Agregar usuario</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="display:block;font-size:10px;color:rgba(255,255,255,.35);margin-bottom:5px">Usuario</label>
+              <input id="new-user" type="text" class="inp-admin" placeholder="nombre_usuario">
+            </div>
+            <div>
+              <label style="display:block;font-size:10px;color:rgba(255,255,255,.35);margin-bottom:5px">Contraseña</label>
+              <input id="new-pass" type="password" class="inp-admin" placeholder="contraseña">
+            </div>
+          </div>
+          <button class="btn-gold" onclick="addUser()">+ Agregar</button>
+          <span id="user-msg" style="font-size:11px;margin-left:10px;color:#4CAF7D;display:none"></span>
+        </div>
+      </div>
+
+      <!-- FUENTES DE DATOS -->
+      <div id="apanel-datos" style="display:none">
+        <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:16px">
+          En Google Sheets: <strong style="color:rgba(255,255,255,.6)">Archivo → Compartir → Publicar en la web</strong>, elegí la pestaña, formato CSV, y pegá la URL acá.
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:10px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">CSV — Turnos (Citas)</label>
+          <input id="url-citas" type="url" class="inp-admin" placeholder="https://docs.google.com/.../pub?gid=...&output=csv">
+          <div id="st-citas" style="font-size:10px;margin-top:4px;color:rgba(255,255,255,.3)"></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:10px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">CSV — Ventas Consultorio</label>
+          <input id="url-ventas" type="url" class="inp-admin" placeholder="https://docs.google.com/.../pub?gid=...&output=csv">
+          <div id="st-ventas" style="font-size:10px;margin-top:4px;color:rgba(255,255,255,.3)"></div>
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:10px;color:rgba(255,255,255,.35);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">CSV — Tienda Online (WooCommerce)</label>
+          <input id="url-woo" type="url" class="inp-admin" placeholder="https://docs.google.com/.../pub?gid=...&output=csv">
+          <div id="st-woo" style="font-size:10px;margin-top:4px;color:rgba(255,255,255,.3)"></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-gold" onclick="saveURLs()">Guardar URLs</button>
+          <button class="btn-ghost" onclick="testURLs()">Probar conexión</button>
+          <span id="urls-msg" style="font-size:11px;color:#4CAF7D;display:none"></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- DASHBOARD -->
 <div id="screen-dashboard">
 
@@ -93,22 +189,23 @@
       </div>
       <span id="hdr-update" style="font-size:11px;color:rgba(255,255,255,.2)"></span>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-size:11px;color:rgba(255,255,255,.35)">Desde</span>
       <input type="date" id="f-from" onchange="renderAll()">
       <span style="font-size:11px;color:rgba(255,255,255,.35)">Hasta</span>
       <input type="date" id="f-to" onchange="renderAll()">
-      <button onclick="refreshData()" style="background:#1a1a1a;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);padding:5px 12px;border-radius:7px;font-size:11px;cursor:pointer">↻ Actualizar</button>
+      <button onclick="refreshData()" style="background:#1a1a1a;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);padding:5px 12px;border-radius:7px;font-size:11px;cursor:pointer" title="Recargar datos">↻</button>
+      <button id="btn-admin" onclick="openAdmin()" style="background:#1a1a1a;border:1px solid rgba(201,169,110,.3);color:#C9A96E;padding:5px 12px;border-radius:7px;font-size:11px;cursor:pointer" title="Administración">⚙ Admin</button>
       <button onclick="doLogout()" style="background:transparent;border:none;color:rgba(255,255,255,.25);font-size:11px;cursor:pointer">Salir</button>
     </div>
   </div>
 
   <!-- Tabs -->
   <div style="background:#0d0d0d;border-bottom:1px solid rgba(255,255,255,.06);padding:0 20px;display:flex;gap:0;overflow-x:auto">
-    <button class="tab-btn active" id="tbtn-resumen"  onclick="switchTab('resumen')">Resumen</button>
-    <button class="tab-btn"        id="tbtn-turnos"   onclick="switchTab('turnos')">Turnos</button>
-    <button class="tab-btn"        id="tbtn-ventas"   onclick="switchTab('ventas')">Ventas Consultorio</button>
-    <button class="tab-btn"        id="tbtn-tienda"   onclick="switchTab('tienda')">Tienda Online</button>
+    <button class="tab-btn active" id="tbtn-resumen" onclick="switchTab('resumen')">Resumen</button>
+    <button class="tab-btn"        id="tbtn-turnos"  onclick="switchTab('turnos')">Turnos</button>
+    <button class="tab-btn"        id="tbtn-ventas"  onclick="switchTab('ventas')">Ventas Consultorio</button>
+    <button class="tab-btn"        id="tbtn-tienda"  onclick="switchTab('tienda')">Tienda Online</button>
   </div>
 
   <!-- Content -->
@@ -117,7 +214,7 @@
     <!-- RESUMEN -->
     <div id="tab-resumen">
       <div class="grid-kpi">
-        <div class="kpi"><div class="kpi-val" id="r-citas">—</div><div class="kpi-label">Turnos</div><div class="kpi-trend" id="r-citas-t"></div></div>
+        <div class="kpi"><div class="kpi-val" id="r-citas">—</div><div class="kpi-label">Turnos</div></div>
         <div class="kpi"><div class="kpi-val" id="r-asist">—</div><div class="kpi-label">Tasa Asistencia</div></div>
         <div class="kpi"><div class="kpi-val" id="r-nuevos">—</div><div class="kpi-label">Nuevos Pacientes</div></div>
         <div class="kpi"><div class="kpi-val" id="r-vmonto">—</div><div class="kpi-label">Ventas Consultorio</div></div>
@@ -175,10 +272,10 @@
 
     <!-- VENTAS -->
     <div id="tab-ventas" style="display:none">
-      <div id="v-nodata" style="text-align:center;padding:60px 20px;color:rgba(255,255,255,.3);display:none">
+      <div id="v-nodata" style="display:none;text-align:center;padding:60px 20px;color:rgba(255,255,255,.3)">
         <div style="font-size:36px;margin-bottom:12px">📊</div>
-        <div style="font-size:14px">Ejecutá <code style="color:#C9A96E">syncVentas()</code> en Apps Script</div>
-        <div style="font-size:12px;margin-top:8px">y publicá la pestaña "Ventas" del Sheet (Archivo → Compartir → Publicar en la web)</div>
+        <div style="font-size:14px;margin-bottom:8px">No hay datos de ventas configurados</div>
+        <div style="font-size:12px">Hacé clic en <strong style="color:#C9A96E">⚙ Admin → Fuentes de datos</strong> y pegá la URL CSV de la pestaña Ventas del Sheet</div>
       </div>
       <div id="v-content">
         <div class="grid-kpi" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
@@ -191,7 +288,7 @@
           <div class="card"><div class="card-title">Ventas por mes</div><canvas id="c-v-mes" height="110"></canvas></div>
           <div class="card"><div class="card-title">Por método de pago</div><canvas id="c-v-pago" height="200"></canvas></div>
         </div>
-        <div class="card" style="margin-bottom:16px"><div class="card-title">Top 10 tratamientos vendidos</div><canvas id="c-v-items" height="200"></canvas></div>
+        <div class="card" style="margin-bottom:16px"><div class="card-title">Top 10 productos/tratamientos</div><canvas id="c-v-items" height="200"></canvas></div>
         <div class="card">
           <div class="card-title">Últimas ventas</div>
           <div style="overflow-x:auto">
@@ -204,10 +301,10 @@
 
     <!-- TIENDA -->
     <div id="tab-tienda" style="display:none">
-      <div id="w-nodata" style="text-align:center;padding:60px 20px;color:rgba(255,255,255,.3);display:none">
+      <div id="w-nodata" style="display:none;text-align:center;padding:60px 20px;color:rgba(255,255,255,.3)">
         <div style="font-size:36px;margin-bottom:12px">🛍️</div>
-        <div style="font-size:14px">Ejecutá <code style="color:#C9A96E">syncWooCommerce()</code> en Apps Script</div>
-        <div style="font-size:12px;margin-top:8px">y publicá la pestaña "WooCommerce" del Sheet</div>
+        <div style="font-size:14px;margin-bottom:8px">No hay datos de tienda configurados</div>
+        <div style="font-size:12px">Hacé clic en <strong style="color:#C9A96E">⚙ Admin → Fuentes de datos</strong> y pegá la URL CSV de la pestaña WooCommerce del Sheet</div>
       </div>
       <div id="w-content">
         <div class="grid-kpi" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
@@ -234,23 +331,33 @@
       </div>
     </div>
 
-  </div><!-- /content -->
-</div><!-- /dashboard -->
+  </div>
+</div>
 
 <script>
 // ============================================================
-// CONFIG — cambiar credenciales o URLs acá
+// CONFIG DEFAULT — credenciales base hardcodeadas
 // ============================================================
 const CFG = {
-  USER: 'admin',
-  // SHA-256 de 'beauty2026' — para cambiar: computar nuevo hash y reemplazar
-  PASS_HASH: 'f88261138119b16806111144491d8dc9d5e77832f51e3d818ae73654668e7c94',
-
-  CSV_CITAS:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=1418107294&single=true&output=csv',
-  // Reemplazar GID_VENTAS y GID_WOO con los gid reales al publicar esas pestañas
-  CSV_VENTAS: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=GID_VENTAS&single=true&output=csv',
-  CSV_WOO:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=GID_WOO&single=true&output=csv',
+  DEFAULT_USER: 'admin',
+  DEFAULT_HASH: 'f88261138119b16806111144491d8dc9d5e77832f51e3d818ae73654668e7c94',
+  CSV_CITAS: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=1418107294&single=true&output=csv',
 };
+
+// URLs guardadas en localStorage (configuradas desde el panel admin)
+function getURLs() {
+  return {
+    citas:  localStorage.getItem('bd_url_citas')  || CFG.CSV_CITAS,
+    ventas: localStorage.getItem('bd_url_ventas') || '',
+    woo:    localStorage.getItem('bd_url_woo')    || '',
+  };
+}
+
+// Usuarios en localStorage (además del admin default)
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('bd_users') || '[]'); } catch { return []; }
+}
+function saveUsers(arr) { localStorage.setItem('bd_users', JSON.stringify(arr)); }
 
 // ============================================================
 // AUTH
@@ -260,26 +367,129 @@ async function sha256(msg) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 async function doLogin() {
-  const u = document.getElementById('inp-user').value.trim();
+  const u = document.getElementById('inp-user').value.trim().toLowerCase();
   const p = document.getElementById('inp-pass').value;
-  const computed = await sha256(p.trim());
-  if (u === CFG.USER && computed === CFG.PASS_HASH) {
-    sessionStorage.setItem('bd_ok','1');
+  const h = await sha256(p.trim());
+  const errEl = document.getElementById('login-err');
+  let ok = false;
+  // Verificar admin default
+  if (u === CFG.DEFAULT_USER && h === CFG.DEFAULT_HASH) ok = true;
+  // Verificar usuarios adicionales en localStorage
+  if (!ok) {
+    const extra = getUsers();
+    ok = extra.some(usr => usr.username === u && usr.hash === h);
+  }
+  if (ok) {
+    sessionStorage.setItem('bd_user', u);
+    errEl.style.display = 'none';
     document.getElementById('screen-login').style.display = 'none';
     startLoading();
   } else {
-    const errEl = document.getElementById('login-err');
     errEl.style.display = 'block';
-    errEl.textContent = computed;
+    errEl.textContent = 'Usuario o contraseña incorrectos';
   }
 }
-function doLogout() { sessionStorage.removeItem('bd_ok'); location.reload(); }
+function doLogout() { sessionStorage.clear(); location.reload(); }
 document.getElementById('inp-pass').onkeydown = e => { if (e.key==='Enter') doLogin(); };
 document.getElementById('inp-user').onkeydown = e => { if (e.key==='Enter') doLogin(); };
-if (sessionStorage.getItem('bd_ok')) {
+if (sessionStorage.getItem('bd_user')) {
   document.getElementById('screen-login').style.display = 'none';
   startLoading();
 }
+
+// ============================================================
+// ADMIN PANEL
+// ============================================================
+function openAdmin() {
+  loadAdminUsers();
+  loadAdminURLs();
+  document.getElementById('admin-modal').style.display = 'flex';
+}
+function closeAdmin() { document.getElementById('admin-modal').style.display = 'none'; }
+function switchATab(t) {
+  document.getElementById('apanel-users').style.display = t==='users'?'block':'none';
+  document.getElementById('apanel-datos').style.display = t==='datos'?'block':'none';
+  document.getElementById('atab-users').classList.toggle('active', t==='users');
+  document.getElementById('atab-datos').classList.toggle('active', t==='datos');
+}
+function loadAdminUsers() {
+  const users = getUsers();
+  const rows = `
+    <tr><td>${CFG.DEFAULT_USER}</td><td><span class="badge b-gold" style="background:rgba(201,169,110,.15);color:#C9A96E">Admin</span></td><td></td></tr>
+    ${users.map((u,i)=>`
+    <tr>
+      <td>${u.username}</td>
+      <td><span class="badge b-gray">Usuario</span></td>
+      <td><button onclick="removeUser(${i})" style="background:transparent;border:none;color:rgba(239,91,91,.6);cursor:pointer;font-size:11px">Eliminar</button></td>
+    </tr>`).join('')}`;
+  document.getElementById('tb-users').innerHTML = rows;
+}
+async function addUser() {
+  const u = document.getElementById('new-user').value.trim().toLowerCase();
+  const p = document.getElementById('new-pass').value;
+  const msg = document.getElementById('user-msg');
+  if (!u || !p) { msg.style.display='inline';msg.style.color='#EF5B5B';msg.textContent='Completá ambos campos'; return; }
+  if (u === CFG.DEFAULT_USER) { msg.style.display='inline';msg.style.color='#EF5B5B';msg.textContent='Nombre reservado'; return; }
+  const h = await sha256(p.trim());
+  const users = getUsers().filter(x => x.username !== u);
+  users.push({ username: u, hash: h });
+  saveUsers(users);
+  document.getElementById('new-user').value = '';
+  document.getElementById('new-pass').value = '';
+  msg.style.display='inline'; msg.style.color='#4CAF7D'; msg.textContent=`Usuario "${u}" guardado`;
+  loadAdminUsers();
+  setTimeout(()=>{ msg.style.display='none'; }, 2500);
+}
+function removeUser(i) {
+  const users = getUsers();
+  users.splice(i, 1);
+  saveUsers(users);
+  loadAdminUsers();
+}
+function loadAdminURLs() {
+  const u = getURLs();
+  document.getElementById('url-citas').value  = u.citas;
+  document.getElementById('url-ventas').value = u.ventas;
+  document.getElementById('url-woo').value    = u.woo;
+  setURLStatus('citas',  u.citas  ? '✓ Configurada' : '— Sin configurar', u.citas);
+  setURLStatus('ventas', u.ventas ? '✓ Configurada' : '— Sin configurar', u.ventas);
+  setURLStatus('woo',    u.woo    ? '✓ Configurada' : '— Sin configurar', u.woo);
+}
+function setURLStatus(key, msg, url) {
+  const el = document.getElementById('st-'+key);
+  if (el) { el.textContent = msg; el.style.color = url ? '#4CAF7D' : 'rgba(255,255,255,.25)'; }
+}
+function saveURLs() {
+  const c = document.getElementById('url-citas').value.trim();
+  const v = document.getElementById('url-ventas').value.trim();
+  const w = document.getElementById('url-woo').value.trim();
+  if (c) localStorage.setItem('bd_url_citas', c);
+  if (v) localStorage.setItem('bd_url_ventas', v);
+  if (w) localStorage.setItem('bd_url_woo', w);
+  const msg = document.getElementById('urls-msg');
+  msg.style.display='inline'; msg.textContent='URLs guardadas. Recargá los datos.';
+  setTimeout(()=>{ msg.style.display='none'; }, 2500);
+  loadAdminURLs();
+}
+async function testURLs() {
+  const urls = getURLs();
+  const msg = document.getElementById('urls-msg');
+  msg.style.display='inline'; msg.textContent='Probando…'; msg.style.color='rgba(255,255,255,.5)';
+  const results = await Promise.all([
+    fetchCSV(urls.citas).then(r=>({ key:'citas', n:r.length })).catch(()=>({ key:'citas', n:-1 })),
+    fetchCSV(urls.ventas).then(r=>({ key:'ventas', n:r.length })).catch(()=>({ key:'ventas', n:-1 })),
+    fetchCSV(urls.woo).then(r=>({ key:'woo', n:r.length })).catch(()=>({ key:'woo', n:-1 })),
+  ]);
+  results.forEach(r => {
+    if (r.n >= 0) setURLStatus(r.key, `✓ ${r.n.toLocaleString('es-AR')} filas`, true);
+    else setURLStatus(r.key, '✗ Error al conectar', null);
+  });
+  msg.style.display='none';
+}
+// Cerrar modal al hacer clic fuera
+document.getElementById('admin-modal').onclick = e => {
+  if (e.target === document.getElementById('admin-modal')) closeAdmin();
+};
 
 // ============================================================
 // STATE
@@ -288,7 +498,7 @@ let RAW = { citas:[], ventas:[], woo:[] };
 let CHS = {};
 
 // ============================================================
-// DATA
+// DATA LOADING
 // ============================================================
 function setLoad(show, msg='', pct=0) {
   document.getElementById('screen-loading').style.display = show ? 'flex' : 'none';
@@ -297,7 +507,7 @@ function setLoad(show, msg='', pct=0) {
 }
 function fetchCSV(url) {
   return new Promise(res => {
-    if (!url || url.includes('GID_')) { res([]); return; }
+    if (!url || url.length < 30) { res([]); return; }
     Papa.parse(url, {
       download:true, header:true, skipEmptyLines:true,
       complete: r => res(r.data),
@@ -306,22 +516,36 @@ function fetchCSV(url) {
   });
 }
 async function startLoading() {
+  const urls = getURLs();
   setLoad(true,'Cargando turnos (Reservo)…',10);
-  RAW.citas  = await fetchCSV(CFG.CSV_CITAS);
+  RAW.citas  = await fetchCSV(urls.citas);
   setLoad(true,'Cargando ventas consultorio…',50);
-  RAW.ventas = await fetchCSV(CFG.CSV_VENTAS);
+  RAW.ventas = await fetchCSV(urls.ventas);
   setLoad(true,'Cargando tienda online…',80);
-  RAW.woo    = await fetchCSV(CFG.CSV_WOO);
+  RAW.woo    = await fetchCSV(urls.woo);
   setLoad(false);
   initDash();
 }
 async function refreshData() {
+  const urls = getURLs();
   setLoad(true,'Actualizando…',20);
-  RAW.citas  = await fetchCSV(CFG.CSV_CITAS);
+  RAW.citas  = await fetchCSV(urls.citas);
   setLoad(true,'Actualizando…',60);
-  RAW.ventas = await fetchCSV(CFG.CSV_VENTAS);
-  RAW.woo    = await fetchCSV(CFG.CSV_WOO);
+  RAW.ventas = await fetchCSV(urls.ventas);
+  RAW.woo    = await fetchCSV(urls.woo);
   setLoad(false);
+  // Re-populate filters
+  const sp=document.getElementById('f-prof'), sc=document.getElementById('f-cat');
+  sp.length=1; sc.length=1;
+  const profs=[...new Set(RAW.citas.map(r=>r.profesional).filter(Boolean))].sort();
+  const cats=[...new Set(RAW.citas.map(r=>r.categoria).filter(Boolean))].sort();
+  profs.forEach(p=>sp.add(new Option(p,p)));
+  cats.forEach(c=>sc.add(new Option(c,c)));
+  // Update nodata
+  document.getElementById('v-nodata').style.display  = RAW.ventas.length===0?'block':'none';
+  document.getElementById('v-content').style.display = RAW.ventas.length===0?'none':'block';
+  document.getElementById('w-nodata').style.display  = RAW.woo.length===0?'block':'none';
+  document.getElementById('w-content').style.display = RAW.woo.length===0?'none':'block';
   renderAll();
   const now = new Date();
   document.getElementById('hdr-update').textContent = `Actualizado ${now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
@@ -387,11 +611,9 @@ function mkC(id,type,labels,datasets,extra={}) {
   if(CHS[id]){CHS[id].destroy();}
   const opts=JSON.parse(JSON.stringify(CD));
   if(type==='doughnut'){delete opts.scales;opts.plugins.legend.position='right';}
-  Object.keys(extra).forEach(k=>{
-    if(k==='scales') Object.assign(opts.scales,extra.scales);
-    else opts[k]=extra[k];
-  });
-  if(extra.scales) opts.scales=Object.assign(opts.scales||{},extra.scales);
+  if(extra.indexAxis) opts.indexAxis=extra.indexAxis;
+  if(extra.plugins) Object.assign(opts.plugins, extra.plugins);
+  if(extra.scales)  opts.scales = Object.assign(opts.scales||{}, extra.scales);
   CHS[id]=new Chart(el,{type,data:{labels,datasets},options:opts});
 }
 
@@ -406,16 +628,16 @@ function initDash() {
   document.getElementById('f-to').value=to;
   document.getElementById('hdr-update').textContent=`Actualizado ${now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
 
-  // Poblar filtros de turnos
   const profs=[...new Set(RAW.citas.map(r=>r.profesional).filter(Boolean))].sort();
   const cats=[...new Set(RAW.citas.map(r=>r.categoria).filter(Boolean))].sort();
   const sp=document.getElementById('f-prof'), sc=document.getElementById('f-cat');
   profs.forEach(p=>sp.add(new Option(p,p)));
   cats.forEach(c=>sc.add(new Option(c,c)));
 
-  // Mostrar/ocultar según datos disponibles
-  if(RAW.ventas.length===0){document.getElementById('v-nodata').style.display='block';document.getElementById('v-content').style.display='none';}
-  if(RAW.woo.length===0){document.getElementById('w-nodata').style.display='block';document.getElementById('w-content').style.display='none';}
+  document.getElementById('v-nodata').style.display  = RAW.ventas.length===0?'block':'none';
+  document.getElementById('v-content').style.display = RAW.ventas.length===0?'none':'block';
+  document.getElementById('w-nodata').style.display  = RAW.woo.length===0?'block':'none';
+  document.getElementById('w-content').style.display = RAW.woo.length===0?'none':'block';
 
   document.getElementById('screen-dashboard').style.display='block';
   renderAll();
@@ -437,7 +659,7 @@ function fCitas() {
 }
 function fVentas() {
   const f=document.getElementById('f-from').value,t=document.getElementById('f-to').value;
-  return RAW.ventas.filter(r=>inR(r.fecha,f,t)&&r.estado==='P');
+  return RAW.ventas.filter(r=>inR(r.fecha,f,t));
 }
 function fWoo() {
   const f=document.getElementById('f-from').value,t=document.getElementById('f-to').value;
@@ -445,7 +667,7 @@ function fWoo() {
 }
 
 // ============================================================
-// RENDER ALL
+// RENDER
 // ============================================================
 let activeTab='resumen';
 function renderAll() {
@@ -453,6 +675,17 @@ function renderAll() {
   if(activeTab==='turnos') renderTurnos();
   if(activeTab==='ventas') renderVentas();
   if(activeTab==='tienda') renderTienda();
+}
+function switchTab(tab) {
+  activeTab=tab;
+  ['resumen','turnos','ventas','tienda'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+    const b=document.getElementById('tbtn-'+t);
+    if(b) b.classList.toggle('active',t===tab);
+  });
+  if(tab==='turnos') renderTurnos();
+  if(tab==='ventas') renderVentas();
+  if(tab==='tienda') renderTienda();
 }
 
 // ============================================================
@@ -462,7 +695,6 @@ function renderResumen() {
   const citas=fCitas(), ventas=fVentas(), woo=fWoo();
   const months=last12();
 
-  // KPIs
   const at=citas.filter(r=>r.estado==='A').length;
   const hist=citas.filter(r=>r.estado!=='NC');
   document.getElementById('r-citas').textContent=fN(citas.length);
@@ -470,33 +702,29 @@ function renderResumen() {
   document.getElementById('r-nuevos').textContent=fN(citas.filter(r=>r.primera_cita==='SI').length);
 
   const vm=ventas.reduce((s,r)=>s+(parseFloat(r.item_monto)||0),0);
-  document.getElementById('r-vmonto').textContent=fM(vm);
+  document.getElementById('r-vmonto').textContent=fM(vm)||'—';
 
   const wSeen=new Set(); let wRev=0;
   for(const r of woo){if(r.estado==='completed'&&r.order_id&&!wSeen.has(r.order_id)){wSeen.add(r.order_id);wRev+=parseFloat(r.total_orden)||0;}}
   const wOrds=new Set(woo.map(r=>r.order_id).filter(Boolean));
-  document.getElementById('r-wpeds').textContent=fN(wOrds.size);
-  document.getElementById('r-wrev').textContent=fM(wRev);
+  document.getElementById('r-wpeds').textContent=fN(wOrds.size)||'—';
+  document.getElementById('r-wrev').textContent=fM(wRev)||'—';
 
-  // Citas por mes
   const cbm={};
   for(const r of citas){const m=mk(cDate(r));if(m)cbm[m]=(cbm[m]||0)+1;}
   mkC('c-r-citas','bar',months.map(mL),
     [{label:'Turnos',data:months.map(m=>cbm[m]||0),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}]);
 
-  // Estado donut
   const ec=cntBy(citas,'estado'),ek=Object.keys(ec);
-  mkC('c-r-estado','doughnut',ek.map(k=>EL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
+  if(ek.length) mkC('c-r-estado','doughnut',ek.map(k=>EL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
 
-  // WooCommerce revenue
   const wbm={},wsn=new Set();
   for(const r of woo){if(r.estado==='completed'&&r.order_id&&!wsn.has(r.order_id)){wsn.add(r.order_id);const m=mk(r.fecha);if(m)wbm[m]=(wbm[m]||0)+(parseFloat(r.total_orden)||0);}}
   mkC('c-r-woo','bar',months.map(mL),
     [{label:'Revenue ARS',data:months.map(m=>Math.round(wbm[m]||0)),backgroundColor:'rgba(91,141,239,.65)',borderColor:'#5B8DEF',borderWidth:1,borderRadius:4}]);
 
-  // Top 5 tratamientos
   const t5=topN(citas,'tratamiento',5);
-  mkC('c-r-top','bar',t5.map(([k])=>k.length>28?k.substring(0,26)+'…':k),
+  if(t5.length) mkC('c-r-top','bar',t5.map(([k])=>k.length>28?k.substring(0,26)+'…':k),
     [{data:t5.map(([,v])=>v),backgroundColor:PAL.slice(0,5),borderWidth:0,borderRadius:4}],
     {indexAxis:'y',plugins:{legend:{display:false}}});
 }
@@ -517,36 +745,31 @@ function renderTurnos() {
   document.getElementById('t-npc').textContent=fN(citas.filter(r=>r.primera_cita==='SI').length);
   document.getElementById('t-onl').textContent=citas.length?(onl/citas.length*100).toFixed(1)+'%':'—';
 
-  // Por mes
   const months=last12(),cbm={};
   for(const r of citas){const m=mk(cDate(r));if(m)cbm[m]=(cbm[m]||0)+1;}
   mkC('c-t-mes','bar',months.map(mL),
     [{label:'Turnos',data:months.map(m=>cbm[m]||0),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}]);
 
-  // Estado
   const ec=cntBy(citas,'estado'),ek=Object.keys(ec);
-  mkC('c-t-est','doughnut',ek.map(k=>EL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
+  if(ek.length) mkC('c-t-est','doughnut',ek.map(k=>EL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
 
-  // Día de semana
   const DOW=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],dc=[0,0,0,0,0,0,0];
   for(const r of citas){const d=cDate(r);if(d)dc[new Date(d+'T12:00:00').getDay()]++;}
   mkC('c-t-dow','bar',DOW,
     [{label:'Turnos',data:dc,backgroundColor:PAL.slice(0,7),borderWidth:0,borderRadius:4}],
     {plugins:{legend:{display:false}}});
 
-  // Top 10 tratamientos
   const t10=topN(citas,'tratamiento',10);
-  mkC('c-t-trat','bar',t10.map(([k])=>k.length>38?k.substring(0,36)+'…':k),
+  if(t10.length) mkC('c-t-trat','bar',t10.map(([k])=>k.length>38?k.substring(0,36)+'…':k),
     [{data:t10.map(([,v])=>v),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}],
     {indexAxis:'y',plugins:{legend:{display:false}}});
 
-  // Tabla
   document.getElementById('tb-turnos').innerHTML=[...citas].reverse().slice(0,30).map(r=>`
     <tr>
       <td>${fD(cDate(r))}</td>
       <td>${r.cliente_nombre||''} ${r.cliente_apellido||''}</td>
       <td style="color:rgba(255,255,255,.55);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.tratamiento||''}</td>
-      <td style="color:rgba(255,255,255,.55)">${(r.profesional||'').replace(/^(Dra?\.|Ctra?\.|Lic\.|Dr\.\s)/,'')}</td>
+      <td style="color:rgba(255,255,255,.55)">${(r.profesional||'').replace(/^(Dra?\.|Ctra?\.|Lic\.\s|Dr\.\s)/,'')}</td>
       <td>${eBadge(r.estado)}</td>
       <td style="color:rgba(255,255,255,.35);font-size:10px">${r.es_online==='SI'?'🌐 Online':'📅 Presencial'}</td>
     </tr>`).join('');
@@ -573,10 +796,10 @@ function renderVentas() {
     [{label:'Revenue ARS',data:months.map(m=>Math.round(vbm[m]||0)),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}]);
 
   const pc=cntBy(ventas,'tipo_pago'),pk=Object.keys(pc);
-  mkC('c-v-pago','doughnut',pk,[{data:pk.map(k=>pc[k]),backgroundColor:PAL,borderWidth:0}]);
+  if(pk.length) mkC('c-v-pago','doughnut',pk,[{data:pk.map(k=>pc[k]),backgroundColor:PAL,borderWidth:0}]);
 
   const ti=topN(ventas,'item_nombre',10);
-  mkC('c-v-items','bar',ti.map(([k])=>k.length>42?k.substring(0,40)+'…':k),
+  if(ti.length) mkC('c-v-items','bar',ti.map(([k])=>k.length>42?k.substring(0,40)+'…':k),
     [{data:ti.map(([,v])=>v),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}],
     {indexAxis:'y',plugins:{legend:{display:false}}});
 
@@ -611,7 +834,7 @@ function renderTienda() {
     if(!r.order_id) continue;
     const m=mk(r.fecha);if(!m) continue;
     if(!ws2.has(r.order_id)){ws2.add(r.order_id);wcm[m]=(wcm[m]||0)+1;}
-    if(r.estado==='completed'&&!seen.has(r.order_id+'_rev')){seen.add(r.order_id+'_rev');wbm[m]=(wbm[m]||0)+(parseFloat(r.total_orden)||0);}
+    if(r.estado==='completed'&&!seen.has(r.order_id+'_r')){seen.add(r.order_id+'_r');wbm[m]=(wbm[m]||0)+(parseFloat(r.total_orden)||0);}
   }
   mkC('c-w-mes','bar',months.map(mL),[
     {label:'Pedidos',data:months.map(m=>wcm[m]||0),backgroundColor:'rgba(91,141,239,.65)',borderColor:'#5B8DEF',borderWidth:1,borderRadius:4,yAxisID:'y'},
@@ -625,15 +848,15 @@ function renderTienda() {
   });
 
   const ec=cntBy(woo,'estado'),ek=Object.keys(ec);
-  mkC('c-w-est','doughnut',ek.map(k=>WL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
+  if(ek.length) mkC('c-w-est','doughnut',ek.map(k=>WL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
 
   const tp=topN(woo.filter(r=>r.producto_nombre),'producto_nombre',10);
-  mkC('c-w-prod','bar',tp.map(([k])=>k.length>35?k.substring(0,33)+'…':k),
+  if(tp.length) mkC('c-w-prod','bar',tp.map(([k])=>k.length>35?k.substring(0,33)+'…':k),
     [{data:tp.map(([,v])=>v),backgroundColor:'rgba(91,141,239,.65)',borderColor:'#5B8DEF',borderWidth:1,borderRadius:4}],
     {indexAxis:'y',plugins:{legend:{display:false}}});
 
   const mp=cntBy(woo,'metodo_pago'),mpk=Object.keys(mp);
-  mkC('c-w-pago','doughnut',mpk,[{data:mpk.map(k=>mp[k]),backgroundColor:PAL,borderWidth:0}]);
+  if(mpk.length) mkC('c-w-pago','doughnut',mpk,[{data:mpk.map(k=>mp[k]),backgroundColor:PAL,borderWidth:0}]);
 
   document.getElementById('tb-woo').innerHTML=woo.slice(0,25).map(r=>`
     <tr>
@@ -645,21 +868,6 @@ function renderTienda() {
       <td>${wBadge(r.estado)}</td>
       <td style="color:rgba(255,255,255,.35);font-size:10px">${r.metodo_pago||''}</td>
     </tr>`).join('');
-}
-
-// ============================================================
-// TABS
-// ============================================================
-function switchTab(tab) {
-  activeTab=tab;
-  ['resumen','turnos','ventas','tienda'].forEach(t=>{
-    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
-    const b=document.getElementById('tbtn-'+t);
-    if(b){b.classList.toggle('active',t===tab);}
-  });
-  if(tab==='turnos') renderTurnos();
-  if(tab==='ventas') renderVentas();
-  if(tab==='tienda') renderTienda();
 }
 </script>
 </body>
