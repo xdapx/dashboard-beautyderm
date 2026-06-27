@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beautyderm Analytics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:100vh}
+    .glass{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)}
+    .kpi{background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px}
+    .kpi-val{font-size:26px;font-weight:700;color:#fff;line-height:1}
+    .kpi-label{font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+    .kpi-trend{font-size:11px;margin-top:6px}
+    .kpi-trend.up{color:#4CAF7D}.kpi-trend.down{color:#EF5B5B}
+    .card{background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:20px}
+    .card-title{font-size:11px;font-weight:600;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+    .tab-btn{padding:12px 18px;font-size:13px;font-weight:500;border-bottom:2px solid transparent;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .2s;white-space:nowrap;background:transparent;border-left:0;border-right:0;border-top:0}
+    .tab-btn:hover{color:rgba(255,255,255,.75)}
+    .tab-btn.active{color:#C9A96E;border-bottom-color:#C9A96E}
+    select,input[type=date]{background:#1a1a1a;border:1px solid rgba(255,255,255,.1);color:#e5e5e5;border-radius:8px;padding:6px 10px;font-size:12px;color-scheme:dark}
+    select:focus,input:focus{outline:1px solid #C9A96E;outline-offset:0}
+    .dt{width:100%;font-size:12px;border-collapse:collapse}
+    .dt th{color:rgba(255,255,255,.35);font-weight:500;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;font-size:11px}
+    .dt td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.75)}
+    .dt tr:hover td{background:rgba(255,255,255,.02)}
+    .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+    .b-green{background:rgba(76,175,125,.15);color:#4CAF7D}
+    .b-red{background:rgba(239,91,91,.15);color:#EF5B5B}
+    .b-yellow{background:rgba(239,183,91,.15);color:#EFB75B}
+    .b-blue{background:rgba(91,141,239,.15);color:#5B8DEF}
+    .b-gray{background:rgba(150,150,150,.15);color:#999}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:2px}
+    .inp-login{width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);color:#e5e5e5;border-radius:8px;padding:10px 14px;font-size:14px;outline:none}
+    .inp-login:focus{border-color:#C9A96E}
+    #screen-loading{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+    #screen-dashboard{display:none}
+    .grid-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+    .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+    .grid-half{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    @media(max-width:900px){.grid-2,.grid-half{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div style="width:100%;max-width:340px">
+    <div style="text-align:center;margin-bottom:36px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:.2em;color:#fff">BEAUTYDERM</div>
+      <div style="font-size:10px;letter-spacing:.35em;color:#C9A96E;margin-top:4px;text-transform:uppercase">Analytics</div>
+    </div>
+    <div class="glass" style="border-radius:16px;padding:32px">
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Usuario</label>
+        <input id="inp-user" type="text" class="inp-login" placeholder="admin" autocomplete="username">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Contraseña</label>
+        <input id="inp-pass" type="password" class="inp-login" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div id="login-err" style="display:none;color:#EF5B5B;font-size:12px;margin-bottom:12px">Usuario o contraseña incorrectos</div>
+      <button id="btn-login" onclick="doLogin()" style="width:100%;background:#C9A96E;color:#0a0a0a;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.08em;text-transform:uppercase">Ingresar</button>
+    </div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,.15)">Av. Rivadavia 6351, Caballito · Uso interno</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="screen-loading">
+  <div style="color:#C9A96E;font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px">Cargando datos</div>
+  <div style="width:220px;background:#1a1a1a;border-radius:2px;height:2px;overflow:hidden">
+    <div id="load-bar" style="height:100%;background:#C9A96E;width:0;transition:width .4s ease"></div>
+  </div>
+  <div id="load-msg" style="font-size:11px;color:rgba(255,255,255,.25);margin-top:12px"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard">
+
+  <!-- Header -->
+  <div style="background:#0d0d0d;border-bottom:1px solid rgba(255,255,255,.06);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50">
+    <div style="display:flex;align-items:center;gap:20px">
+      <div>
+        <span style="font-size:14px;font-weight:700;letter-spacing:.15em">BEAUTYDERM</span>
+        <span style="font-size:10px;color:#C9A96E;letter-spacing:.2em;margin-left:8px">ANALYTICS</span>
+      </div>
+      <span id="hdr-update" style="font-size:11px;color:rgba(255,255,255,.2)"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:11px;color:rgba(255,255,255,.35)">Desde</span>
+      <input type="date" id="f-from" onchange="renderAll()">
+      <span style="font-size:11px;color:rgba(255,255,255,.35)">Hasta</span>
+      <input type="date" id="f-to" onchange="renderAll()">
+      <button onclick="refreshData()" style="background:#1a1a1a;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);padding:5px 12px;border-radius:7px;font-size:11px;cursor:pointer">↻ Actualizar</button>
+      <button onclick="doLogout()" style="background:transparent;border:none;color:rgba(255,255,255,.25);font-size:11px;cursor:pointer">Salir</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="background:#0d0d0d;border-bottom:1px solid rgba(255,255,255,.06);padding:0 20px;display:flex;gap:0;overflow-x:auto">
+    <button class="tab-btn active" id="tbtn-resumen"  onclick="switchTab('resumen')">Resumen</button>
+    <button class="tab-btn"        id="tbtn-turnos"   onclick="switchTab('turnos')">Turnos</button>
+    <button class="tab-btn"        id="tbtn-ventas"   onclick="switchTab('ventas')">Ventas Consultorio</button>
+    <button class="tab-btn"        id="tbtn-tienda"   onclick="switchTab('tienda')">Tienda Online</button>
+  </div>
+
+  <!-- Content -->
+  <div style="padding:20px;max-width:1400px;margin:0 auto">
+
+    <!-- RESUMEN -->
+    <div id="tab-resumen">
+      <div class="grid-kpi">
+        <div class="kpi"><div class="kpi-val" id="r-citas">—</div><div class="kpi-label">Turnos</div><div class="kpi-trend" id="r-citas-t"></div></div>
+        <div class="kpi"><div class="kpi-val" id="r-asist">—</div><div class="kpi-label">Tasa Asistencia</div></div>
+        <div class="kpi"><div class="kpi-val" id="r-nuevos">—</div><div class="kpi-label">Nuevos Pacientes</div></div>
+        <div class="kpi"><div class="kpi-val" id="r-vmonto">—</div><div class="kpi-label">Ventas Consultorio</div></div>
+        <div class="kpi"><div class="kpi-val" id="r-wpeds">—</div><div class="kpi-label">Pedidos Tienda</div></div>
+        <div class="kpi"><div class="kpi-val" id="r-wrev">—</div><div class="kpi-label">Revenue Tienda</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Turnos por mes</div><canvas id="c-r-citas" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Distribución de estados</div><canvas id="c-r-estado" height="200"></canvas></div>
+      </div>
+      <div class="grid-half">
+        <div class="card"><div class="card-title">Revenue Tienda por mes</div><canvas id="c-r-woo" height="120"></canvas></div>
+        <div class="card"><div class="card-title">Top 5 tratamientos</div><canvas id="c-r-top" height="120"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TURNOS -->
+    <div id="tab-turnos" style="display:none">
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <select id="f-prof" onchange="renderAll()" style="min-width:190px"><option value="">Todos los profesionales</option></select>
+        <select id="f-cat"  onchange="renderAll()" style="min-width:160px"><option value="">Todas las categorías</option></select>
+        <select id="f-est"  onchange="renderAll()">
+          <option value="">Todos los estados</option>
+          <option value="A">Atendida</option>
+          <option value="C">Cancelada</option>
+          <option value="E">Eliminada</option>
+          <option value="NC">No Confirmada</option>
+          <option value="S">Sobreturno</option>
+        </select>
+      </div>
+      <div class="grid-kpi" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+        <div class="kpi"><div class="kpi-val" id="t-total">—</div><div class="kpi-label">Total</div></div>
+        <div class="kpi"><div class="kpi-val" id="t-atend">—</div><div class="kpi-label">Atendidas</div></div>
+        <div class="kpi"><div class="kpi-val" id="t-canc">—</div><div class="kpi-label">Canceladas</div></div>
+        <div class="kpi"><div class="kpi-val" id="t-asist">—</div><div class="kpi-label">Tasa Asistencia</div></div>
+        <div class="kpi"><div class="kpi-val" id="t-npc">—</div><div class="kpi-label">Nuevos Pac.</div></div>
+        <div class="kpi"><div class="kpi-val" id="t-onl">—</div><div class="kpi-label">% Online</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Turnos por mes</div><canvas id="c-t-mes" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Por estado</div><canvas id="c-t-est" height="200"></canvas></div>
+      </div>
+      <div class="grid-half">
+        <div class="card"><div class="card-title">Por día de semana</div><canvas id="c-t-dow" height="140"></canvas></div>
+        <div class="card"><div class="card-title">Top 10 tratamientos</div><canvas id="c-t-trat" height="140"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Últimos turnos</div>
+        <div style="overflow-x:auto">
+          <table class="dt"><thead><tr><th>Fecha</th><th>Paciente</th><th>Tratamiento</th><th>Profesional</th><th>Estado</th><th>Origen</th></tr></thead>
+          <tbody id="tb-turnos"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VENTAS -->
+    <div id="tab-ventas" style="display:none">
+      <div id="v-nodata" style="text-align:center;padding:60px 20px;color:rgba(255,255,255,.3);display:none">
+        <div style="font-size:36px;margin-bottom:12px">📊</div>
+        <div style="font-size:14px">Ejecutá <code style="color:#C9A96E">syncVentas()</code> en Apps Script</div>
+        <div style="font-size:12px;margin-top:8px">y publicá la pestaña "Ventas" del Sheet (Archivo → Compartir → Publicar en la web)</div>
+      </div>
+      <div id="v-content">
+        <div class="grid-kpi" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+          <div class="kpi"><div class="kpi-val" id="v-total">—</div><div class="kpi-label">Ventas</div></div>
+          <div class="kpi"><div class="kpi-val" id="v-monto">—</div><div class="kpi-label">Monto Total</div></div>
+          <div class="kpi"><div class="kpi-val" id="v-ticket">—</div><div class="kpi-label">Ticket Prom.</div></div>
+          <div class="kpi"><div class="kpi-val" id="v-mes">—</div><div class="kpi-label">Este Mes</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-title">Ventas por mes</div><canvas id="c-v-mes" height="110"></canvas></div>
+          <div class="card"><div class="card-title">Por método de pago</div><canvas id="c-v-pago" height="200"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:16px"><div class="card-title">Top 10 tratamientos vendidos</div><canvas id="c-v-items" height="200"></canvas></div>
+        <div class="card">
+          <div class="card-title">Últimas ventas</div>
+          <div style="overflow-x:auto">
+            <table class="dt"><thead><tr><th>Fecha</th><th>Cliente</th><th>Ítem</th><th>Monto</th><th>Pago</th><th>Estado</th></tr></thead>
+            <tbody id="tb-ventas"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIENDA -->
+    <div id="tab-tienda" style="display:none">
+      <div id="w-nodata" style="text-align:center;padding:60px 20px;color:rgba(255,255,255,.3);display:none">
+        <div style="font-size:36px;margin-bottom:12px">🛍️</div>
+        <div style="font-size:14px">Ejecutá <code style="color:#C9A96E">syncWooCommerce()</code> en Apps Script</div>
+        <div style="font-size:12px;margin-top:8px">y publicá la pestaña "WooCommerce" del Sheet</div>
+      </div>
+      <div id="w-content">
+        <div class="grid-kpi" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+          <div class="kpi"><div class="kpi-val" id="w-total">—</div><div class="kpi-label">Total Pedidos</div></div>
+          <div class="kpi"><div class="kpi-val" id="w-rev">—</div><div class="kpi-label">Revenue Total</div></div>
+          <div class="kpi"><div class="kpi-val" id="w-ticket">—</div><div class="kpi-label">Ticket Prom.</div></div>
+          <div class="kpi"><div class="kpi-val" id="w-comp">—</div><div class="kpi-label">% Completados</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-title">Pedidos y revenue por mes</div><canvas id="c-w-mes" height="110"></canvas></div>
+          <div class="card"><div class="card-title">Por estado</div><canvas id="c-w-est" height="200"></canvas></div>
+        </div>
+        <div class="grid-half">
+          <div class="card"><div class="card-title">Top 10 productos</div><canvas id="c-w-prod" height="200"></canvas></div>
+          <div class="card"><div class="card-title">Por método de pago</div><canvas id="c-w-pago" height="200"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Últimos pedidos</div>
+          <div style="overflow-x:auto">
+            <table class="dt"><thead><tr><th>#</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Total</th><th>Estado</th><th>Pago</th></tr></thead>
+            <tbody id="tb-woo"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /dashboard -->
+
+<script>
+// ============================================================
+// CONFIG — cambiar credenciales o URLs acá
+// ============================================================
+const CFG = {
+  USER: 'admin',
+  // SHA-256 de 'beauty2026' — para cambiar: computar nuevo hash y reemplazar
+  PASS_HASH: 'f88261138119b16806111144491d8dc9d5e77832f51e3d818ae73654668e7c94',
+
+  CSV_CITAS:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=1418107294&single=true&output=csv',
+  // Reemplazar GID_VENTAS y GID_WOO con los gid reales al publicar esas pestañas
+  CSV_VENTAS: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=GID_VENTAS&single=true&output=csv',
+  CSV_WOO:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=GID_WOO&single=true&output=csv',
+};
+
+// ============================================================
+// AUTH
+// ============================================================
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function doLogin() {
+  const u = document.getElementById('inp-user').value.trim();
+  const p = document.getElementById('inp-pass').value;
+  if (u === CFG.USER && (await sha256(p)) === CFG.PASS_HASH) {
+    sessionStorage.setItem('bd_ok','1');
+    document.getElementById('screen-login').style.display = 'none';
+    startLoading();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+  }
+}
+function doLogout() { sessionStorage.removeItem('bd_ok'); location.reload(); }
+document.getElementById('inp-pass').onkeydown = e => { if (e.key==='Enter') doLogin(); };
+document.getElementById('inp-user').onkeydown = e => { if (e.key==='Enter') doLogin(); };
+if (sessionStorage.getItem('bd_ok')) {
+  document.getElementById('screen-login').style.display = 'none';
+  startLoading();
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let RAW = { citas:[], ventas:[], woo:[] };
+let CHS = {};
+
+// ============================================================
+// DATA
+// ============================================================
+function setLoad(show, msg='', pct=0) {
+  document.getElementById('screen-loading').style.display = show ? 'flex' : 'none';
+  if (msg) document.getElementById('load-msg').textContent = msg;
+  document.getElementById('load-bar').style.width = pct + '%';
+}
+function fetchCSV(url) {
+  return new Promise(res => {
+    if (!url || url.includes('GID_')) { res([]); return; }
+    Papa.parse(url, {
+      download:true, header:true, skipEmptyLines:true,
+      complete: r => res(r.data),
+      error: () => res([])
+    });
+  });
+}
+async function startLoading() {
+  setLoad(true,'Cargando turnos (Reservo)…',10);
+  RAW.citas  = await fetchCSV(CFG.CSV_CITAS);
+  setLoad(true,'Cargando ventas consultorio…',50);
+  RAW.ventas = await fetchCSV(CFG.CSV_VENTAS);
+  setLoad(true,'Cargando tienda online…',80);
+  RAW.woo    = await fetchCSV(CFG.CSV_WOO);
+  setLoad(false);
+  initDash();
+}
+async function refreshData() {
+  setLoad(true,'Actualizando…',20);
+  RAW.citas  = await fetchCSV(CFG.CSV_CITAS);
+  setLoad(true,'Actualizando…',60);
+  RAW.ventas = await fetchCSV(CFG.CSV_VENTAS);
+  RAW.woo    = await fetchCSV(CFG.CSV_WOO);
+  setLoad(false);
+  renderAll();
+  const now = new Date();
+  document.getElementById('hdr-update').textContent = `Actualizado ${now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+const EL = {A:'Atendida',C:'Cancelada',E:'Eliminada',NC:'No Confirmada',S:'Sobreturno'};
+const WL = {completed:'Completado',processing:'En proceso','on-hold':'En espera',pending:'Pendiente',cancelled:'Cancelado',failed:'Fallido',refunded:'Reembolsado'};
+const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const PAL = ['#C9A96E','#5B8DEF','#4CAF7D','#EF5B5B','#EF8C5B','#8C5BEF','#5BEFCC','#EFB75B','#EF5BD8','#aaa'];
+
+function cDate(r) { return r.inicio ? r.inicio.substring(0,10) : null; }
+function mk(d)    { return d ? d.substring(0,7) : null; }
+function fM(n)    { const v=parseFloat(n)||0; if(v>=1e6) return '$'+(v/1e6).toFixed(1)+'M'; if(v>=1000) return '$'+Math.round(v/1000)+'k'; return '$'+Math.round(v); }
+function fN(n)    { return Number(n||0).toLocaleString('es-AR'); }
+function fD(s)    { if(!s) return ''; const p=s.substring(0,10).split('-'); return `${p[2]}/${p[1]}/${p[0].substring(2)}`; }
+function mL(k)    { const [y,m]=k.split('-'); return MES[+m-1]+' '+y.substring(2); }
+function last12() {
+  const ms=[]; const d=new Date(); d.setDate(1);
+  for(let i=11;i>=0;i--){ const x=new Date(d.getFullYear(),d.getMonth()-i,1); ms.push(`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`); }
+  return ms;
+}
+function inR(d,f,t) { if(!d) return false; const s=d.substring(0,10); return s>=f&&s<=t; }
+function topN(arr,k,n=10) {
+  const m={}; for(const r of arr){const v=r[k];if(v)m[v]=(m[v]||0)+1;}
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);
+}
+function cntBy(arr,k) { const m={}; for(const r of arr){const v=r[k];if(v)m[v]=(m[v]||0)+1;} return m; }
+function eBadge(c) {
+  const l=EL[c]||c;
+  if(c==='A') return `<span class="badge b-green">${l}</span>`;
+  if(c==='C'||c==='E') return `<span class="badge b-red">${l}</span>`;
+  if(c==='NC') return `<span class="badge b-yellow">${l}</span>`;
+  return `<span class="badge b-gray">${l}</span>`;
+}
+function wBadge(s) {
+  const l=WL[s]||s;
+  if(s==='completed') return `<span class="badge b-green">${l}</span>`;
+  if(s==='cancelled'||s==='failed'||s==='refunded') return `<span class="badge b-red">${l}</span>`;
+  if(s==='on-hold'||s==='pending') return `<span class="badge b-yellow">${l}</span>`;
+  if(s==='processing') return `<span class="badge b-blue">${l}</span>`;
+  return `<span class="badge b-gray">${l}</span>`;
+}
+
+// ============================================================
+// CHART FACTORY
+// ============================================================
+const CD = {
+  responsive:true,maintainAspectRatio:true,
+  plugins:{
+    legend:{labels:{color:'rgba(255,255,255,.45)',font:{size:11},boxWidth:10,padding:12}},
+    tooltip:{backgroundColor:'rgba(15,15,15,.95)',titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:10}
+  },
+  scales:{
+    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}}},
+    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}}}
+  }
+};
+function mkC(id,type,labels,datasets,extra={}) {
+  const el=document.getElementById(id); if(!el) return;
+  if(CHS[id]){CHS[id].destroy();}
+  const opts=JSON.parse(JSON.stringify(CD));
+  if(type==='doughnut'){delete opts.scales;opts.plugins.legend.position='right';}
+  Object.keys(extra).forEach(k=>{
+    if(k==='scales') Object.assign(opts.scales,extra.scales);
+    else opts[k]=extra[k];
+  });
+  if(extra.scales) opts.scales=Object.assign(opts.scales||{},extra.scales);
+  CHS[id]=new Chart(el,{type,data:{labels,datasets},options:opts});
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function initDash() {
+  const now=new Date();
+  const to=now.toISOString().substring(0,10);
+  const from=new Date(now.getFullYear(),now.getMonth()-11,1).toISOString().substring(0,10);
+  document.getElementById('f-from').value=from;
+  document.getElementById('f-to').value=to;
+  document.getElementById('hdr-update').textContent=`Actualizado ${now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
+
+  // Poblar filtros de turnos
+  const profs=[...new Set(RAW.citas.map(r=>r.profesional).filter(Boolean))].sort();
+  const cats=[...new Set(RAW.citas.map(r=>r.categoria).filter(Boolean))].sort();
+  const sp=document.getElementById('f-prof'), sc=document.getElementById('f-cat');
+  profs.forEach(p=>sp.add(new Option(p,p)));
+  cats.forEach(c=>sc.add(new Option(c,c)));
+
+  // Mostrar/ocultar según datos disponibles
+  if(RAW.ventas.length===0){document.getElementById('v-nodata').style.display='block';document.getElementById('v-content').style.display='none';}
+  if(RAW.woo.length===0){document.getElementById('w-nodata').style.display='block';document.getElementById('w-content').style.display='none';}
+
+  document.getElementById('screen-dashboard').style.display='block';
+  renderAll();
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function fCitas() {
+  const f=document.getElementById('f-from').value, t=document.getElementById('f-to').value;
+  const p=document.getElementById('f-prof').value, c=document.getElementById('f-cat').value, e=document.getElementById('f-est').value;
+  return RAW.citas.filter(r=>{
+    const d=cDate(r); if(!inR(d,f,t)) return false;
+    if(p&&r.profesional!==p) return false;
+    if(c&&r.categoria!==c) return false;
+    if(e&&r.estado!==e) return false;
+    return true;
+  });
+}
+function fVentas() {
+  const f=document.getElementById('f-from').value,t=document.getElementById('f-to').value;
+  return RAW.ventas.filter(r=>inR(r.fecha,f,t)&&r.estado==='P');
+}
+function fWoo() {
+  const f=document.getElementById('f-from').value,t=document.getElementById('f-to').value;
+  return RAW.woo.filter(r=>inR(r.fecha,f,t));
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+let activeTab='resumen';
+function renderAll() {
+  renderResumen();
+  if(activeTab==='turnos') renderTurnos();
+  if(activeTab==='ventas') renderVentas();
+  if(activeTab==='tienda') renderTienda();
+}
+
+// ============================================================
+// RESUMEN
+// ============================================================
+function renderResumen() {
+  const citas=fCitas(), ventas=fVentas(), woo=fWoo();
+  const months=last12();
+
+  // KPIs
+  const at=citas.filter(r=>r.estado==='A').length;
+  const hist=citas.filter(r=>r.estado!=='NC');
+  document.getElementById('r-citas').textContent=fN(citas.length);
+  document.getElementById('r-asist').textContent=hist.length?(at/hist.length*100).toFixed(1)+'%':'—';
+  document.getElementById('r-nuevos').textContent=fN(citas.filter(r=>r.primera_cita==='SI').length);
+
+  const vm=ventas.reduce((s,r)=>s+(parseFloat(r.item_monto)||0),0);
+  document.getElementById('r-vmonto').textContent=fM(vm);
+
+  const wSeen=new Set(); let wRev=0;
+  for(const r of woo){if(r.estado==='completed'&&r.order_id&&!wSeen.has(r.order_id)){wSeen.add(r.order_id);wRev+=parseFloat(r.total_orden)||0;}}
+  const wOrds=new Set(woo.map(r=>r.order_id).filter(Boolean));
+  document.getElementById('r-wpeds').textContent=fN(wOrds.size);
+  document.getElementById('r-wrev').textContent=fM(wRev);
+
+  // Citas por mes
+  const cbm={};
+  for(const r of citas){const m=mk(cDate(r));if(m)cbm[m]=(cbm[m]||0)+1;}
+  mkC('c-r-citas','bar',months.map(mL),
+    [{label:'Turnos',data:months.map(m=>cbm[m]||0),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}]);
+
+  // Estado donut
+  const ec=cntBy(citas,'estado'),ek=Object.keys(ec);
+  mkC('c-r-estado','doughnut',ek.map(k=>EL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
+
+  // WooCommerce revenue
+  const wbm={},wsn=new Set();
+  for(const r of woo){if(r.estado==='completed'&&r.order_id&&!wsn.has(r.order_id)){wsn.add(r.order_id);const m=mk(r.fecha);if(m)wbm[m]=(wbm[m]||0)+(parseFloat(r.total_orden)||0);}}
+  mkC('c-r-woo','bar',months.map(mL),
+    [{label:'Revenue ARS',data:months.map(m=>Math.round(wbm[m]||0)),backgroundColor:'rgba(91,141,239,.65)',borderColor:'#5B8DEF',borderWidth:1,borderRadius:4}]);
+
+  // Top 5 tratamientos
+  const t5=topN(citas,'tratamiento',5);
+  mkC('c-r-top','bar',t5.map(([k])=>k.length>28?k.substring(0,26)+'…':k),
+    [{data:t5.map(([,v])=>v),backgroundColor:PAL.slice(0,5),borderWidth:0,borderRadius:4}],
+    {indexAxis:'y',plugins:{legend:{display:false}}});
+}
+
+// ============================================================
+// TURNOS
+// ============================================================
+function renderTurnos() {
+  const citas=fCitas();
+  const at=citas.filter(r=>r.estado==='A').length;
+  const ca=citas.filter(r=>r.estado==='C'||r.estado==='E').length;
+  const hist=citas.filter(r=>r.estado!=='NC');
+  const onl=citas.filter(r=>r.es_online==='SI').length;
+  document.getElementById('t-total').textContent=fN(citas.length);
+  document.getElementById('t-atend').textContent=fN(at);
+  document.getElementById('t-canc').textContent=fN(ca);
+  document.getElementById('t-asist').textContent=hist.length?(at/hist.length*100).toFixed(1)+'%':'—';
+  document.getElementById('t-npc').textContent=fN(citas.filter(r=>r.primera_cita==='SI').length);
+  document.getElementById('t-onl').textContent=citas.length?(onl/citas.length*100).toFixed(1)+'%':'—';
+
+  // Por mes
+  const months=last12(),cbm={};
+  for(const r of citas){const m=mk(cDate(r));if(m)cbm[m]=(cbm[m]||0)+1;}
+  mkC('c-t-mes','bar',months.map(mL),
+    [{label:'Turnos',data:months.map(m=>cbm[m]||0),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}]);
+
+  // Estado
+  const ec=cntBy(citas,'estado'),ek=Object.keys(ec);
+  mkC('c-t-est','doughnut',ek.map(k=>EL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
+
+  // Día de semana
+  const DOW=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],dc=[0,0,0,0,0,0,0];
+  for(const r of citas){const d=cDate(r);if(d)dc[new Date(d+'T12:00:00').getDay()]++;}
+  mkC('c-t-dow','bar',DOW,
+    [{label:'Turnos',data:dc,backgroundColor:PAL.slice(0,7),borderWidth:0,borderRadius:4}],
+    {plugins:{legend:{display:false}}});
+
+  // Top 10 tratamientos
+  const t10=topN(citas,'tratamiento',10);
+  mkC('c-t-trat','bar',t10.map(([k])=>k.length>38?k.substring(0,36)+'…':k),
+    [{data:t10.map(([,v])=>v),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}],
+    {indexAxis:'y',plugins:{legend:{display:false}}});
+
+  // Tabla
+  document.getElementById('tb-turnos').innerHTML=[...citas].reverse().slice(0,30).map(r=>`
+    <tr>
+      <td>${fD(cDate(r))}</td>
+      <td>${r.cliente_nombre||''} ${r.cliente_apellido||''}</td>
+      <td style="color:rgba(255,255,255,.55);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.tratamiento||''}</td>
+      <td style="color:rgba(255,255,255,.55)">${(r.profesional||'').replace(/^(Dra?\.|Ctra?\.|Lic\.|Dr\.\s)/,'')}</td>
+      <td>${eBadge(r.estado)}</td>
+      <td style="color:rgba(255,255,255,.35);font-size:10px">${r.es_online==='SI'?'🌐 Online':'📅 Presencial'}</td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// VENTAS
+// ============================================================
+function renderVentas() {
+  if(RAW.ventas.length===0) return;
+  const ventas=fVentas();
+  const uuids=new Set(ventas.map(r=>r.venta_uuid).filter(Boolean));
+  const tot=ventas.reduce((s,r)=>s+(parseFloat(r.item_monto)||0),0);
+  const tick=uuids.size?tot/uuids.size:0;
+  const now=new Date(),thisMk=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('v-total').textContent=fN(uuids.size);
+  document.getElementById('v-monto').textContent=fM(tot);
+  document.getElementById('v-ticket').textContent=fM(tick);
+  document.getElementById('v-mes').textContent=fN(ventas.filter(r=>mk(r.fecha)===thisMk).length);
+
+  const months=last12(),vbm={};
+  for(const r of ventas){const m=mk(r.fecha);if(m)vbm[m]=(vbm[m]||0)+(parseFloat(r.item_monto)||0);}
+  mkC('c-v-mes','bar',months.map(mL),
+    [{label:'Revenue ARS',data:months.map(m=>Math.round(vbm[m]||0)),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}]);
+
+  const pc=cntBy(ventas,'tipo_pago'),pk=Object.keys(pc);
+  mkC('c-v-pago','doughnut',pk,[{data:pk.map(k=>pc[k]),backgroundColor:PAL,borderWidth:0}]);
+
+  const ti=topN(ventas,'item_nombre',10);
+  mkC('c-v-items','bar',ti.map(([k])=>k.length>42?k.substring(0,40)+'…':k),
+    [{data:ti.map(([,v])=>v),backgroundColor:'rgba(201,169,110,.65)',borderColor:'#C9A96E',borderWidth:1,borderRadius:4}],
+    {indexAxis:'y',plugins:{legend:{display:false}}});
+
+  document.getElementById('tb-ventas').innerHTML=[...ventas].reverse().slice(0,25).map(r=>`
+    <tr>
+      <td>${fD(r.fecha)}</td>
+      <td>${r.cliente_nombre||''} ${r.cliente_apellido||''}</td>
+      <td style="color:rgba(255,255,255,.55)">${r.item_nombre||'—'}</td>
+      <td style="color:#C9A96E">${fM(r.item_monto)}</td>
+      <td style="color:rgba(255,255,255,.4);font-size:11px">${r.tipo_pago||''}</td>
+      <td>${eBadge(r.estado)}</td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// TIENDA
+// ============================================================
+function renderTienda() {
+  if(RAW.woo.length===0) return;
+  const woo=fWoo();
+  const ords=new Set(woo.map(r=>r.order_id).filter(Boolean));
+  const comp=new Set(woo.filter(r=>r.estado==='completed').map(r=>r.order_id).filter(Boolean));
+  const seen=new Set(); let rev=0;
+  for(const r of woo){if(r.estado==='completed'&&r.order_id&&!seen.has(r.order_id)){seen.add(r.order_id);rev+=parseFloat(r.total_orden)||0;}}
+  document.getElementById('w-total').textContent=fN(ords.size);
+  document.getElementById('w-rev').textContent=fM(rev);
+  document.getElementById('w-ticket').textContent=fM(comp.size?rev/comp.size:0);
+  document.getElementById('w-comp').textContent=ords.size?(comp.size/ords.size*100).toFixed(1)+'%':'—';
+
+  const months=last12(),wbm={},wcm={},ws2=new Set();
+  for(const r of woo){
+    if(!r.order_id) continue;
+    const m=mk(r.fecha);if(!m) continue;
+    if(!ws2.has(r.order_id)){ws2.add(r.order_id);wcm[m]=(wcm[m]||0)+1;}
+    if(r.estado==='completed'&&!seen.has(r.order_id+'_rev')){seen.add(r.order_id+'_rev');wbm[m]=(wbm[m]||0)+(parseFloat(r.total_orden)||0);}
+  }
+  mkC('c-w-mes','bar',months.map(mL),[
+    {label:'Pedidos',data:months.map(m=>wcm[m]||0),backgroundColor:'rgba(91,141,239,.65)',borderColor:'#5B8DEF',borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {type:'line',label:'Revenue',data:months.map(m=>Math.round(wbm[m]||0)),borderColor:'#C9A96E',backgroundColor:'transparent',borderWidth:2,pointRadius:3,yAxisID:'y1'}
+  ],{
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},position:'left'},
+      y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#C9A96E',font:{size:10},callback:v=>fM(v)}}
+    }
+  });
+
+  const ec=cntBy(woo,'estado'),ek=Object.keys(ec);
+  mkC('c-w-est','doughnut',ek.map(k=>WL[k]||k),[{data:ek.map(k=>ec[k]),backgroundColor:PAL,borderWidth:0}]);
+
+  const tp=topN(woo.filter(r=>r.producto_nombre),'producto_nombre',10);
+  mkC('c-w-prod','bar',tp.map(([k])=>k.length>35?k.substring(0,33)+'…':k),
+    [{data:tp.map(([,v])=>v),backgroundColor:'rgba(91,141,239,.65)',borderColor:'#5B8DEF',borderWidth:1,borderRadius:4}],
+    {indexAxis:'y',plugins:{legend:{display:false}}});
+
+  const mp=cntBy(woo,'metodo_pago'),mpk=Object.keys(mp);
+  mkC('c-w-pago','doughnut',mpk,[{data:mpk.map(k=>mp[k]),backgroundColor:PAL,borderWidth:0}]);
+
+  document.getElementById('tb-woo').innerHTML=woo.slice(0,25).map(r=>`
+    <tr>
+      <td style="color:rgba(255,255,255,.35)">#${r.order_number||r.order_id}</td>
+      <td>${fD(r.fecha)}</td>
+      <td>${r.cliente_nombre||''} ${r.cliente_apellido||''}</td>
+      <td style="color:rgba(255,255,255,.55)">${r.producto_nombre||'—'}</td>
+      <td style="color:#C9A96E">${fM(r.total_orden)}</td>
+      <td>${wBadge(r.estado)}</td>
+      <td style="color:rgba(255,255,255,.35);font-size:10px">${r.metodo_pago||''}</td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+  activeTab=tab;
+  ['resumen','turnos','ventas','tienda'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+    const b=document.getElementById('tbtn-'+t);
+    if(b){b.classList.toggle('active',t===tab);}
+  });
+  if(tab==='turnos') renderTurnos();
+  if(tab==='ventas') renderVentas();
+  if(tab==='tienda') renderTienda();
+}
+</script>
+</body>
+</html>
