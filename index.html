@@ -341,15 +341,17 @@
 const CFG = {
   DEFAULT_USER: 'admin',
   DEFAULT_HASH: 'f88261138119b16806111144491d8dc9d5e77832f51e3d818ae73654668e7c94',
-  CSV_CITAS: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=1418107294&single=true&output=csv',
+  CSV_CITAS:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=1418107294&single=true&output=csv',
+  CSV_VENTAS: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=571811886&single=true&output=csv',
+  CSV_WOO:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNryDsmvhg0BOLPOInnHqu7cNEc7lQcfQ9QsEkcqo2b20xTNDx3oYpA0iNDyiNxyLDv0sYbqxsGkv-/pub?gid=1660054381&single=true&output=csv',
 };
 
 // URLs guardadas en localStorage (configuradas desde el panel admin)
 function getURLs() {
   return {
     citas:  localStorage.getItem('bd_url_citas')  || CFG.CSV_CITAS,
-    ventas: localStorage.getItem('bd_url_ventas') || '',
-    woo:    localStorage.getItem('bd_url_woo')    || '',
+    ventas: localStorage.getItem('bd_url_ventas') || CFG.CSV_VENTAS,
+    woo:    localStorage.getItem('bd_url_woo')    || CFG.CSV_WOO,
   };
 }
 
