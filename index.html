@@ -645,8 +645,9 @@ function reinitFilters() {
 }
 function initDash() {
   const now=new Date();
-  // Default: current year
-  document.getElementById('f-from').value=`${now.getFullYear()}-01-01`;
+  // Default: current month
+  const mm=String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('f-from').value=`${now.getFullYear()}-${mm}-01`;
   document.getElementById('f-to').value=now.toISOString().substring(0,10);
   document.getElementById('hdr-update').textContent=`Act. ${now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
   reinitFilters();
